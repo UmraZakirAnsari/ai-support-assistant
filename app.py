@@ -1,4 +1,6 @@
 
+from dotenv import load_dotenv
+load_dotenv()
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
@@ -7,7 +9,7 @@ import json
 
 app = FastAPI()
 
-# ✅ CORS (UI connect ke liye)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,7 +18,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-API_KEY = "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"
+import os
+
+API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 
 @app.get("/ui", response_class=HTMLResponse)
@@ -78,10 +82,10 @@ Language preference:
 
         data = response.json()
 
-        # ✅ AI ka actual content nikaalna
+        
         content = data["choices"][0]["message"]["content"]
 
-        # ✅ JSON parse karna
+     
         parsed = json.loads(content)
 
         return parsed
