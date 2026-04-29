@@ -2,75 +2,208 @@
 <html>
 <head>
     <title>AI Support Chat</title>
+
+    <style>
+    body {
+        margin:0;
+        height:100vh;
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        background: linear-gradient(135deg, #1e3a8a, #0f172a);
+        font-family: Arial;
+        color:white;
+    }
+
+    .container {
+        width:420px;
+        backdrop-filter: blur(10px);
+        background: rgba(30,41,59,0.8);
+        padding:20px;
+        border-radius:15px;
+        box-shadow:0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    h2 {
+        text-align:center;
+        margin-bottom:10px;
+    }
+
+    .chatBox {
+        height:320px;
+        overflow:auto;
+        padding:10px;
+        border-radius:10px;
+        background:#020617;
+        border:1px solid #334155;
+    }
+
+    .msg {
+        margin:8px 0;
+        display:flex;
+    }
+
+    .user {
+        justify-content:flex-end;
+    }
+
+    .ai {
+        justify-content:flex-start;
+    }
+
+    .bubble {
+        padding:10px;
+        border-radius:12px;
+        max-width:75%;
+    }
+
+    .user .bubble {
+        background:#3b82f6;
+    }
+
+    .ai .bubble {
+        background:#334155;
+    }
+
+    
+    .typing {
+        display:flex;
+        gap:4px;
+    }
+
+    .typing span {
+        width:6px;
+        height:6px;
+        background:white;
+        border-radius:50%;
+        animation:bounce 1.4s infinite;
+    }
+
+    .typing span:nth-child(2) { animation-delay:0.2s; }
+    .typing span:nth-child(3) { animation-delay:0.4s; }
+
+    @keyframes bounce {
+        0%,80%,100% { transform:scale(0.5); opacity:0.3; }
+        40% { transform:scale(1); opacity:1; }
+    }
+
+    .controls {
+        display:flex;
+        gap:5px;
+        margin-top:10px;
+    }
+
+    input {
+        flex:1;
+        padding:8px;
+        border-radius:6px;
+        border:none;
+    }
+
+    select {
+        padding:6px;
+        border-radius:6px;
+    }
+
+    button {
+        background:#22c55e;
+        border:none;
+        padding:8px 12px;
+        border-radius:6px;
+        cursor:pointer;
+        transition:0.2s;
+    }
+
+    button:hover {
+        background:#16a34a;
+    }
+    </style>
 </head>
+
 <body>
 
-<h2>AI Customer Support Chat</h2>
+<div class="container">
 
-<div id="chatBox" style="border:1px solid black; height:300px; overflow:auto; padding:10px;"></div>
+    <h2> AI Support Chat</h2>
 
-<br>
+    <div id="chatBox" class="chatBox"></div>
 
-<!-- ✅ Language dropdown -->
-<select id="lang">
-    <option value="both">Both</option>
-    <option value="en">English</option>
-    <option value="ar">Arabic</option>
-</select>
+    <div class="controls">
+        <select id="lang">
+            <option value="both">Both</option>
+            <option value="en">English</option>
+            <option value="ar">Arabic</option>
+        </select>
 
-<input type="text" id="inputText" placeholder="Type your message..." style="width:300px;">
-<button onclick="sendMessage()">Send</button>
+        <input type="text" id="inputText" placeholder="Ask your issue...">
+
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+</div>
 
 <script>
-    async function sendMessage() {
+async function sendMessage() {
 
-        let input = document.getElementById("inputText");
-        let text = input.value;
+    let input = document.getElementById("inputText");
+    let text = input.value;
+    if (!text) return;
 
-        if (!text) return;
+    let chatBox = document.getElementById("chatBox");
 
-        let chatBox = document.getElementById("chatBox");
+    chatBox.innerHTML += `
+        <div class="msg user">
+            <div class="bubble">${text}</div>
+        </div>
+    `;
 
-        // ✅ user message
-        chatBox.innerHTML += `<p><b>You:</b> ${text}</p>`;
+    input.value = "";
 
-        input.value = "";
+    let lang = document.getElementById("lang").value;
 
-        // ✅ get selected language
-        let lang = document.getElementById("lang").value;
+    
+    chatBox.innerHTML += `
+        <div id="loading" class="msg ai">
+            <div class="bubble">
+                <div class="typing">
+                    <span></span><span></span><span></span>
+                </div>
+            </div>
+        </div>
+    `;
 
-        // ✅ API call WITH lang
-        let response = await fetch(
-            `http://127.0.0.1:8000/analyze?text=${encodeURIComponent(text)}&lang=${lang}`
-        );
+    chatBox.scrollTop = chatBox.scrollHeight;
 
-        let data = await response.json();
+    let response = await fetch(
+        `http://127.0.0.1:8000/analyze?text=${encodeURIComponent(text)}&lang=${lang}`
+    );
 
-        // ✅ safe replies
-        let reply_en = data.reply_en || "";
-        let reply_ar = data.reply_ar || "";
+    let data = await response.json();
 
-        let finalReply = "";
+    document.getElementById("loading")?.remove();
 
-        if (lang === "en") {
-            finalReply = reply_en || "Sorry, I couldn't understand.";
-        } 
-        else if (lang === "ar") {
-            finalReply = reply_ar || "عذرًا، لم أفهم طلبك.";
-        } 
-        else {
-            finalReply = `
-                ${reply_en || ""}
-                <br><br>
-                ${reply_ar || ""}
-            `;
-        }
+    let reply_en = data.reply_en || "";
+    let reply_ar = data.reply_ar || "";
 
-        // ✅ AI message
-        chatBox.innerHTML += `<p><b>AI:</b> ${finalReply}</p>`;
+    let finalReply = "";
 
-        chatBox.scrollTop = chatBox.scrollHeight;
+    if (lang === "en") {
+        finalReply = reply_en || "Sorry, I couldn't understand.";
+    } else if (lang === "ar") {
+        finalReply = reply_ar || "عذرًا، لم أفهم طلبك.";
+    } else {
+        finalReply = `<b>EN:</b> ${reply_en}<br><br><b>AR:</b> ${reply_ar}`;
     }
+
+    
+    chatBox.innerHTML += `
+        <div class="msg ai">
+            <div class="bubble">${finalReply}</div>
+        </div>
+    `;
+
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
 </script>
 
 </body>
